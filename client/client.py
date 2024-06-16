@@ -16,8 +16,14 @@ def send_file(file_path, server_address):
     total_packets_sent = 0
     total_retransmissions = 0
 
+    # Controle de congestionamento
+    cwnd = 1  # Tamanho da janela de congestionamento (inicialmente 1 pacote)
+    ssthresh = 16  # Limite do Slow Start para transição para Congestion Avoidance (valor arbitrário)
+    slow_start = True  # Indicador de Slow Start
+
     with open(file_path, 'rb') as f:
         seq_num = 0
+        packets = []
         while True:
             chunk = f.read(10)
             if not chunk:
@@ -28,28 +34,48 @@ def send_file(file_path, server_address):
 
             crc = calculate_crc(chunk)
             packet = seq_num.to_bytes(4, 'big') + crc.to_bytes(4, 'big') + chunk
-            log(f"Sending packet {seq_num} to {server_address}")
-            sock.sendto(packet, server_address)
-            total_packets_sent += 1
-
-            start_packet_time = datetime.now()
-
-            while True:
-                try:
-                    sock.settimeout(1.0)
-                    ack, _ = sock.recvfrom(1024)
-                    ack_num = int.from_bytes(ack, 'big')
-                    if ack_num == seq_num + 1:
-                        end_packet_time = datetime.now()
-                        duration = (end_packet_time - start_packet_time).total_seconds()
-                        log(f"Received ACK {ack_num} in {duration:.4f} seconds")
-                        break
-                except socket.timeout:
-                    log(f"Timeout, resending packet {seq_num}")
-                    sock.sendto(packet, server_address)
-                    total_retransmissions += 1
-            
+            packets.append(packet)
             seq_num += 1
+
+    next_seq_num = 0
+    acked_seq_num = 0
+
+    while next_seq_num < len(packets):
+        for _ in range(cwnd):
+            if next_seq_num >= len(packets):
+                break
+            log(f"Sending packet {next_seq_num} to {server_address}")
+            sock.sendto(packets[next_seq_num], server_address)
+            total_packets_sent += 1
+            next_seq_num += 1
+
+        start_packet_time = datetime.now()
+
+        while acked_seq_num < next_seq_num:
+            try:
+                sock.settimeout(1.0)
+                ack, _ = sock.recvfrom(1024)
+                ack_num = int.from_bytes(ack, 'big')
+                if ack_num > acked_seq_num:
+                    end_packet_time = datetime.now()
+                    duration = (end_packet_time - start_packet_time).total_seconds()
+                    log(f"Received ACK {ack_num} in {duration:.4f} seconds")
+                    acked_seq_num = ack_num
+                    if slow_start:
+                        cwnd *= 2  # Crescimento exponencial
+                        if cwnd >= ssthresh:
+                            slow_start = False
+                    else:
+                        cwnd += 1  # Crescimento linear (Congestion Avoidance)
+            except socket.timeout:
+                log(f"Timeout, resending packets from {acked_seq_num} to {next_seq_num}")
+                total_retransmissions += 1
+                next_seq_num = acked_seq_num  # Reiniciar envio a partir do último ACK confirmado
+                cwnd = 1  # Resetar janela de congestionamento
+                slow_start = True
+                ssthresh //= 2  # Reduzir limite de Slow Start pela metade
+                break
+            
             time.sleep(0.5)  # Sleep to visualize packet sending
 
     # Send termination packet
