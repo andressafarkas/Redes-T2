@@ -17,6 +17,9 @@ def start_server(host='localhost', port=12345):
 
     expected_seq_num = 0
     file_data = b""
+    total_packets_received = 0
+    total_packets_with_error = 0
+    start_time = datetime.now()
 
     while True:
         data, address = sock.recvfrom(1024)
@@ -32,6 +35,7 @@ def start_server(host='localhost', port=12345):
         received_crc = int.from_bytes(data[4:8], 'big')
         payload = data[8:]
 
+        total_packets_received += 1
         log(f"Received packet {seq_num} from {address}")
 
         if calculate_crc(payload) == received_crc:
@@ -41,13 +45,17 @@ def start_server(host='localhost', port=12345):
                 log(f"Packet {seq_num} received correctly.")
             ack = (seq_num + 1).to_bytes(4, 'big')
         else:
+            total_packets_with_error += 1
             log(f"Error detected in packet {seq_num}. Expected CRC: {received_crc}, Calculated CRC: {calculate_crc(payload)}")
-            ack = expected_seq_num.to_bytes(4, 'big')
+            ack = expected_seq_num.to.bytes(4, 'big')
         
         sock.sendto(ack, address)
         log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
         
         time.sleep(0.5)  # Sleep to visualize packet reception
+
+    end_time = datetime.now()
+    total_duration = (end_time - start_time).total_seconds()
 
     # Remove any trailing null bytes added for padding
     file_data = file_data.rstrip(b'\0')
@@ -56,6 +64,9 @@ def start_server(host='localhost', port=12345):
         f.write(file_data)
 
     log("File received and saved as received_file.txt")
+    log(f"Total packets received: {total_packets_received}")
+    log(f"Total packets with error: {total_packets_with_error}")
+    log(f"Total duration: {total_duration:.4f} seconds")
 
 if __name__ == "__main__":
     host = input("Enter the server host (default 'localhost'): ") or 'localhost'
