@@ -1,9 +1,13 @@
 import socket
 import zlib
 import time
+from datetime import datetime
 
 def calculate_crc(data):
     return zlib.crc32(data) & 0xffffffff
+
+def log(message):
+    print(f"[{datetime.now()}] {message}")
 
 def send_file(file_path, server_address):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -17,8 +21,10 @@ def send_file(file_path, server_address):
 
             crc = calculate_crc(chunk)
             packet = seq_num.to_bytes(4, 'big') + crc.to_bytes(4, 'big') + chunk
-            print(f"Sending packet {seq_num} to {server_address}")
+            log(f"Sending packet {seq_num} to {server_address}")
             sock.sendto(packet, server_address)
+
+            start_time = datetime.now()
 
             while True:
                 try:
@@ -26,16 +32,18 @@ def send_file(file_path, server_address):
                     ack, _ = sock.recvfrom(1024)
                     ack_num = int.from_bytes(ack, 'big')
                     if ack_num == seq_num + 1:
-                        print(f"Received ACK {ack_num}")
+                        end_time = datetime.now()
+                        duration = (end_time - start_time).total_seconds()
+                        log(f"Received ACK {ack_num} in {duration:.4f} seconds")
                         break
                 except socket.timeout:
-                    print(f"Timeout, resending packet {seq_num}")
+                    log(f"Timeout, resending packet {seq_num}")
                     sock.sendto(packet, server_address)
             
             seq_num += 1
 
     sock.close()
-    print("File sent successfully.")
+    log("File sent successfully.")
 
 if __name__ == "__main__":
     file_path = input("Enter the file path to send: ")
