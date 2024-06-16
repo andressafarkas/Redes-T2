@@ -44,7 +44,12 @@ def main():
 
     with open('arquivo_reconstruido.txt', 'wb') as f:
         for seq in sorted(received_data.keys()):
-            f.write(received_data[seq])
+            if seq == max(received_data.keys()):  # Last packet
+                chunk = received_data[seq].rstrip(b'\x00')  # Remove padding
+            else:
+                chunk = received_data[seq]
+            f.write(chunk)
+        print("Arquivo reconstruído salvo como 'arquivo_reconstruido.txt'")
 
 if __name__ == "__main__":
     main()
