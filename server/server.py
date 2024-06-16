@@ -20,8 +20,13 @@ def start_server(host='localhost', port=12345):
 
     while True:
         data, address = sock.recvfrom(1024)
-        if not data:
+
+        if data == b'TERMINATION':
+            log(f"Received termination packet from {address}")
             break
+
+        if not data:
+            continue
 
         seq_num = int.from_bytes(data[:4], 'big')
         received_crc = int.from_bytes(data[4:8], 'big')

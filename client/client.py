@@ -46,6 +46,10 @@ def send_file(file_path, server_address):
             seq_num += 1
             time.sleep(0.5)  # Sleep to visualize packet sending
 
+    # Send termination packet
+    termination_packet = b'TERMINATION'
+    log(f"Sending termination packet to {server_address}")
+    sock.sendto(termination_packet, server_address)
     sock.close()
     log("File sent successfully.")
 
