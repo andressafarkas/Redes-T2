@@ -1,6 +1,7 @@
 import socket
 import zlib
 from datetime import datetime
+import time
 
 def calculate_crc(data):
     return zlib.crc32(data) & 0xffffffff
@@ -39,6 +40,8 @@ def start_server(host='localhost', port=12345):
         
         sock.sendto(ack, address)
         log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
+        
+        time.sleep(0.5)  # Sleep to visualize packet reception
 
     with open('received_file.txt', 'wb') as f:
         f.write(file_data)
