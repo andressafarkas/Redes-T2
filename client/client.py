@@ -41,6 +41,8 @@ def send_file(file_path, server_address):
     acked_seq_num = 0
 
     while next_seq_num < len(packets):
+        count = 0
+
         for _ in range(cwnd):
             if next_seq_num >= len(packets):
                 break
@@ -48,6 +50,18 @@ def send_file(file_path, server_address):
             sock.sendto(packets[next_seq_num], server_address)
             total_packets_sent += 1
             next_seq_num += 1
+            count += 1
+
+        if slow_start:
+            cwnd *= 2  # Crescimento exponencial
+            if cwnd >= ssthresh:
+                slow_start = False
+        else:
+            cwnd += 1  # Crescimento linear (Congestion Avoidance)
+
+        print("PACKETS ENVIADOS --------------------")
+        print(count)
+        print("-------------------------------------")
 
         start_packet_time = datetime.now()
 
@@ -55,18 +69,12 @@ def send_file(file_path, server_address):
             try:
                 sock.settimeout(1.0)
                 ack, _ = sock.recvfrom(1024)
-                ack_num = int.from_bytes(ack, 'big')
-                if ack_num > acked_seq_num:
+                ack_num_rcv = int.from_bytes(ack, 'big')
+                if ack_num_rcv == acked_seq_num:
                     end_packet_time = datetime.now()
                     duration = (end_packet_time - start_packet_time).total_seconds()
-                    log(f"Received ACK {ack_num} in {duration:.4f} seconds")
-                    acked_seq_num = ack_num
-                    if slow_start:
-                        cwnd *= 2  # Crescimento exponencial
-                        if cwnd >= ssthresh:
-                            slow_start = False
-                    else:
-                        cwnd += 1  # Crescimento linear (Congestion Avoidance)
+                    log(f"Received ACK {ack_num_rcv} in {duration:.4f} seconds")
+                    acked_seq_num = ack_num_rcv+1                   
             except socket.timeout:
                 log(f"Timeout, resending packets from {acked_seq_num} to {next_seq_num}")
                 total_retransmissions += 1

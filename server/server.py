@@ -43,7 +43,7 @@ def start_server(host='localhost', port=12345):
                 file_data += payload
                 expected_seq_num += 1
                 log(f"Packet {seq_num} received correctly.")
-            ack = (seq_num + 1).to_bytes(4, 'big')
+            ack = (seq_num).to_bytes(4, 'big')
         else:
             total_packets_with_error += 1
             log(f"Error detected in packet {seq_num}. Expected CRC: {received_crc}, Calculated CRC: {calculate_crc(payload)}")
