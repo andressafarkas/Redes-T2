@@ -19,6 +19,9 @@ def send_file(file_path, server_address):
             if not chunk:
                 break
 
+            if len(chunk) < 10:
+                chunk = chunk.ljust(10, b'\0')  # Pad the last chunk to ensure it is 10 bytes
+
             crc = calculate_crc(chunk)
             packet = seq_num.to_bytes(4, 'big') + crc.to_bytes(4, 'big') + chunk
             log(f"Sending packet {seq_num} to {server_address}")
