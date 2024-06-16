@@ -49,6 +49,9 @@ def start_server(host='localhost', port=12345):
         
         time.sleep(0.5)  # Sleep to visualize packet reception
 
+    # Remove any trailing null bytes added for padding
+    file_data = file_data.rstrip(b'\0')
+
     with open('received_file.txt', 'wb') as f:
         f.write(file_data)
 
