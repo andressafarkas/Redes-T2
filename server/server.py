@@ -11,6 +11,7 @@ def log(message):
 
 def start_server(host='localhost', port=12345):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow socket address reuse
     sock.bind((host, port))
     log(f"Server started at {host}:{port}")
 
