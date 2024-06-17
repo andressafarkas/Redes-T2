@@ -58,20 +58,20 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
         log(f"Received packet {seq_num} from {address}")
 
         if calculate_crc(payload) == received_crc:
-            expected_seq_num += 1
-            log(f"Packet {seq_num} received correctly.")
-            ack = (seq_num + 1).to_bytes(4, 'big')
-            rnd = random.random();
-            print("--------------")
-            print(rnd)
-            print("--------------")
-            if rnd > error_rate:
-                file_data += payload
-                sock.sendto(ack, address)
-                log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
-            else:
-                log(f"Simulated error, ACK {int.from_bytes(ack, 'big')} not sent. Sleep for 1.5 seconds")
-                time.sleep(1.5)
+            if seq_num == expected_seq_num:
+                rnd = random.random()
+                if rnd > error_rate:
+                    expected_seq_num += 1
+                    log(f"Packet {seq_num} received correctly.")
+                    ack = (seq_num + 1).to_bytes(4, 'big')
+                    print("--------------")
+                    print(f"rnd_number: {rnd}\nseq_num: {seq_num}\nfile_data: {file_data}")
+                    print("--------------")
+                    file_data += payload
+                    sock.sendto(ack, address)
+                    log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
+                else:
+                    log(f"Simulated error, ACK {int.from_bytes(ack, 'big')} not sent.")
         else:
             total_packets_with_error += 1
             log(f"Error detected in packet {seq_num}. Expected CRC: {received_crc}, Calculated CRC: {calculate_crc(payload)}")
