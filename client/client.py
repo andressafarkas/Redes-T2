@@ -54,8 +54,8 @@ def send_file(file_path, server_address):
             packets.append(packet)
             seq_num += 1
 
-    next_seq_num = 1
-    acked_seq_num = 1
+    next_seq_num = 0
+    acked_seq_num = 0
 
     while next_seq_num < len(packets):
         count = 0
@@ -98,7 +98,6 @@ def send_file(file_path, server_address):
                 next_seq_num = acked_seq_num  # Reiniciar envio a partir do último ACK confirmado
                 cwnd = 1  # Resetar janela de congestionamento
                 slow_start = True
-                ssthresh //= 2  # Reduzir limite de Slow Start pela metade
                 break
             
             time.sleep(0.5)  # Sleep to visualize packet sending
