@@ -11,6 +11,23 @@ def log(message):
 
 def send_file(file_path, server_address):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Estabelecimento de conexão
+    log("Sending SYN to establish connection")
+    sock.sendto(b'SYN', server_address)
+    
+    while True:
+        try:
+            sock.settimeout(1.0)
+            syn_ack, _ = sock.recvfrom(1024)
+            if syn_ack == b'SYN_ACK':
+                log("Received SYN_ACK.")
+                log("Sending ACK to establish connection")
+                sock.sendto(b'ACK', server_address)
+                break
+        except socket.timeout:
+            log("Timeout, resending SYN")
+            sock.sendto(b'SYN', server_address)
     
     start_time = datetime.now()
     total_packets_sent = 0
@@ -86,10 +103,26 @@ def send_file(file_path, server_address):
             
             time.sleep(0.5)  # Sleep to visualize packet sending
 
-    # Send termination packet
-    termination_packet = b'TERMINATION'
-    log(f"Sending termination packet to {server_address}")
-    sock.sendto(termination_packet, server_address)
+    # Encerramento da conexão
+    log("Sending FIN to terminate connection")
+    sock.sendto(b'FIN', server_address)
+    
+    while True:
+        try:
+            sock.settimeout(1.0)
+            fin_ack, _ = sock.recvfrom(1024)
+            if fin_ack == b'ACK':
+                log("Received ACK.")
+                continue
+            if fin_ack == b'FIN_ACK':
+                log("Received FIN + ACK.")
+                log("Sending ACK to terminate connection.")
+                sock.sendto(b'ACK', server_address)
+                break
+        except socket.timeout:
+            log("Timeout, resending FIN")
+            sock.sendto(b'FIN', server_address)
+
     sock.close()
 
     end_time = datetime.now()

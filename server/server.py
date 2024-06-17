@@ -24,8 +24,26 @@ def start_server(host='localhost', port=12345):
     while True:
         data, address = sock.recvfrom(1024)
 
-        if data == b'TERMINATION':
-            log(f"Received termination packet from {address}")
+        if data == b'SYN':
+            log(f"Received SYN from {address}, sending SYN_ACK")
+            sock.sendto(b'SYN_ACK', address)
+            while True:
+                ack, _ = sock.recvfrom(1024)
+                if ack == b'ACK':
+                    log(f"Received ACK from {address}")
+                    break
+            continue
+
+        if data == b'FIN':
+            log(f"Received FIN from {address}, sending ACK")
+            sock.sendto(b'ACK', address)
+            log(f"Sending FIN + ACK to {address}")
+            sock.sendto(b'FIN_ACK', address)
+            while True:
+                ack, _ = sock.recvfrom(1024)
+                if ack == b'ACK':
+                    log(f"Received ACK from {address}")
+                    break
             break
 
         if not data:
