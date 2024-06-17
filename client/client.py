@@ -37,8 +37,8 @@ def send_file(file_path, server_address):
             packets.append(packet)
             seq_num += 1
 
-    next_seq_num = 0
-    acked_seq_num = 0
+    next_seq_num = 1
+    acked_seq_num = 1
 
     while next_seq_num < len(packets):
         count = 0
@@ -70,11 +70,11 @@ def send_file(file_path, server_address):
                 sock.settimeout(1.0)
                 ack, _ = sock.recvfrom(1024)
                 ack_num_rcv = int.from_bytes(ack, 'big')
-                if ack_num_rcv == acked_seq_num:
+                if ack_num_rcv > acked_seq_num:
                     end_packet_time = datetime.now()
                     duration = (end_packet_time - start_packet_time).total_seconds()
                     log(f"Received ACK {ack_num_rcv} in {duration:.4f} seconds")
-                    acked_seq_num = ack_num_rcv+1                   
+                    acked_seq_num = ack_num_rcv
             except socket.timeout:
                 log(f"Timeout, resending packets from {acked_seq_num} to {next_seq_num}")
                 total_retransmissions += 1
