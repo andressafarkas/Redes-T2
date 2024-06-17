@@ -58,18 +58,20 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
         log(f"Received packet {seq_num} from {address}")
 
         if calculate_crc(payload) == received_crc:
-            if seq_num == expected_seq_num:
+            expected_seq_num += 1
+            log(f"Packet {seq_num} received correctly.")
+            ack = (seq_num + 1).to_bytes(4, 'big')
+            rnd = random.random();
+            print("--------------")
+            print(rnd)
+            print("--------------")
+            if rnd > error_rate:
                 file_data += payload
-                expected_seq_num += 1
-                log(f"Packet {seq_num} received correctly.")
-                ack = (seq_num + 1).to_bytes(4, 'big')
-
-                if random.random() > error_rate:  
-                    sock.sendto(ack, address)
-                    log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
-                else:
-                    log(f"Simulated error, ACK {int.from_bytes(ack, 'big')} not sent. Sleep for 1.5 seconds")
-                    time.sleep(1.5)
+                sock.sendto(ack, address)
+                log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
+            else:
+                log(f"Simulated error, ACK {int.from_bytes(ack, 'big')} not sent. Sleep for 1.5 seconds")
+                time.sleep(1.5)
         else:
             total_packets_with_error += 1
             log(f"Error detected in packet {seq_num}. Expected CRC: {received_crc}, Calculated CRC: {calculate_crc(payload)}")
