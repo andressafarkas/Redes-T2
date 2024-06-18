@@ -38,17 +38,20 @@ def send_file(file_path, server_address):
     ssthresh = 16  # Limite do Slow Start para transição para Congestion Avoidance (valor arbitrário)
     slow_start = True  # Indicador de Slow Start
 
+    # Leitura do arquivo
     with open(file_path, 'rb') as f:
         seq_num = 0
         packets = []
         while True:
-            chunk = f.read(10)
+            chunk = f.read(10) # separa o arquivo em chunks de 10 bytes
             if not chunk:
                 break
 
+            # Padding
             if len(chunk) < 10:
                 chunk = chunk.ljust(10, b'\0')  # Pad the last chunk to ensure it is 10 bytes
 
+            # Calcula crc para ser enviado no packet
             crc = calculate_crc(chunk)
             packet = seq_num.to_bytes(4, 'big') + crc.to_bytes(4, 'big') + chunk
             packets.append(packet)
@@ -57,9 +60,12 @@ def send_file(file_path, server_address):
     next_seq_num = 0
     acked_seq_num = 0
 
+    # Lógica de envio de packets e recebimento de ACKs
+    # Realiza envios até todos packets serem enviados
     while next_seq_num < len(packets):
         count = 0
 
+        # Realiza loop de envios conforme a janela de congestionamento (cwnd)
         for _ in range(cwnd):
             if next_seq_num >= len(packets):
                 break
@@ -79,14 +85,16 @@ def send_file(file_path, server_address):
         print("PACKETS ENVIADOS --------------------")
         print(count)
         print("-------------------------------------")
-
+        
         start_packet_time = datetime.now()
 
+        # Realiza loop até receber todos packets enviados
         while acked_seq_num < next_seq_num:
             try:
-                sock.settimeout(1.0)
+                sock.settimeout(1.0) # seta o tempo limite para esperar resposta
                 ack, _ = sock.recvfrom(1024)
                 ack_num_rcv = int.from_bytes(ack, 'big')
+                # verifica se recebeu o ACK esperado (maior que o ACK anterior)
                 if ack_num_rcv > acked_seq_num:
                     end_packet_time = datetime.now()
                     duration = (end_packet_time - start_packet_time).total_seconds()
@@ -100,7 +108,7 @@ def send_file(file_path, server_address):
                 slow_start = True
                 break
             
-            time.sleep(0.5)  # Sleep to visualize packet sending
+            time.sleep(0.5)  # Sleep para visualizar recebimento
 
     # Encerramento da conexão
     log("Sending FIN to terminate connection")

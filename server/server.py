@@ -12,7 +12,7 @@ def log(message):
 
 def start_server(host='localhost', port=12345, error_rate=0.0):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow socket address reuse
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Permite reuso de endereço socket
     sock.bind((host, port))
     log(f"Server started at {host}:{port}")
 
@@ -24,7 +24,7 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
 
     while True:
         data, address = sock.recvfrom(1024)
-
+        # Estabelecimento de conexão
         if data == b'SYN':
             log(f"Received SYN from {address}, sending SYN_ACK")
             sock.sendto(b'SYN_ACK', address)
@@ -34,7 +34,7 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
                     log(f"Received ACK from {address}")
                     break
             continue
-
+        # Encerramento da conexão
         if data == b'FIN':
             log(f"Received FIN from {address}, sending ACK")
             sock.sendto(b'ACK', address)
@@ -57,10 +57,12 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
         total_packets_received += 1
         log(f"Received packet {seq_num} from {address}")
 
+        # Calcula crc presente no pacote recebido
         if calculate_crc(payload) == received_crc:
+            # verifica se sequencia recebida é a esperada
             if seq_num == expected_seq_num:
                 rnd = random.random()
-                if rnd > error_rate:
+                if rnd > error_rate: 
                     expected_seq_num += 1
                     log(f"Packet {seq_num} received correctly.")
                     ack = (seq_num + 1).to_bytes(4, 'big')
@@ -74,12 +76,12 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
             log(f"Error detected in packet {seq_num}. Expected CRC: {received_crc}, Calculated CRC: {calculate_crc(payload)}")
             ack = expected_seq_num.to.bytes(4, 'big')
         
-        time.sleep(0.5)  # Sleep to visualize packet reception
+        time.sleep(0.5)  # Sleep para visualizar recebimento
 
     end_time = datetime.now()
     total_duration = (end_time - start_time).total_seconds()
 
-    # Remove any trailing null bytes added for padding
+    # Remove padding
     file_data = file_data.rstrip(b'\0')
 
     with open('received_file.txt', 'wb') as f:
