@@ -64,9 +64,6 @@ def start_server(host='localhost', port=12345, error_rate=0.0):
                     expected_seq_num += 1
                     log(f"Packet {seq_num} received correctly.")
                     ack = (seq_num + 1).to_bytes(4, 'big')
-                    print("--------------")
-                    print(f"rnd_number: {rnd}\nseq_num: {seq_num}\nfile_data: {file_data}")
-                    print("--------------")
                     file_data += payload
                     sock.sendto(ack, address)
                     log(f"Sent ACK {int.from_bytes(ack, 'big')} to {address}")
